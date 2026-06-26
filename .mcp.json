@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bigquery": {
+      "command": "./toolbox.exe",
+      "args": ["--prebuilt", "bigquery", "--stdio"],
+      "env": {
+        "BIGQUERY_PROJECT": "airflow-pipeline-project"
+      }
+    }
+  }
+}

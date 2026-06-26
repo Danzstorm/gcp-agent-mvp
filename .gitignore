@@ -1,0 +1,50 @@
+# Secrets / credentials — NEVER commit
+*.env
+.env*
+*-key.json
+*-credentials.json
+application_default_credentials.json
+*.pem
+coingecko*.key
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+.terraform.lock.hcl
+
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Tooling
+toolbox.exe
+toolbox
+
+# ADK local session store
+**/.adk/
+*.db
+
+# Decks generados desde markdown (la fuente .md sí se versiona)
+docs/deck/*.pptx
+docs/deck/*.pdf
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

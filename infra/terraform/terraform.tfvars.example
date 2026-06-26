@@ -1,0 +1,10 @@
+# Copia a terraform.tfvars y rellena. terraform.tfvars NO se commitea (.gitignore).
+project_id      = "TU_PROJECT_ID_AQUI"
+region          = "us-central1"
+bq_location     = "US"
+raw_dataset     = "coingecko_raw"
+curated_dataset = "coingecko_curated"
+
+# Bucket GCS de landing (global único — cambia si colisiona)
+landing_bucket_name = "TU_PROJECT_ID-coingecko-raw"
+raw_retention_days  = 90
