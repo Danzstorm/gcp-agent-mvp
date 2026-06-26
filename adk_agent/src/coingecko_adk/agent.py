@@ -37,15 +37,12 @@ def _api_key() -> str:
     return resp.payload.data.decode("UTF-8")
 
 
-def get_crypto_news(category: str = "general", per_page: int = 5) -> list[dict[str, Any]]:
+def get_crypto_news(per_page: int = 5) -> list[dict[str, Any]]:
     """Obtiene noticias recientes del mercado cripto desde CoinGecko.
 
     Úsalo cuando pregunten por noticias, eventos, novedades o contexto del mercado.
 
     Args:
-        category: Categoría de noticias. Opciones: "general", "milestone", "partnership",
-                  "exchange_listing", "software_release", "fund_movement", "new_listings",
-                  "event". Default "general".
         per_page: Cantidad de noticias a devolver (1-20). Default 5.
 
     Returns:
@@ -54,7 +51,7 @@ def get_crypto_news(category: str = "general", per_page: int = 5) -> list[dict[s
     try:
         resp = httpx.get(
             f"{COINGECKO_BASE}/news",
-            params={"category": category, "per_page": min(per_page, 20)},
+            params={"per_page": min(per_page, 20)},
             headers={"x-cg-demo-api-key": _api_key()},
             timeout=15.0,
         )
@@ -119,8 +116,8 @@ Eres un analista experto en criptomonedas con acceso a tres fuentes de informaci
    ACTUAL de cualquier moneda. Úsalo cuando pregunten "precio ahora", "precio actual" o
    necesiten datos más frescos que 1 hora.
 
-3. **get_crypto_news (noticias cripto)**: trae noticias recientes del mercado desde CoinGecko.
-   Úsalo para contexto, eventos, novedades o sentimiento de mercado.
+3. **get_crypto_news (noticias cripto)**: trae las últimas noticias del mercado desde CoinGecko.
+   Úsalo para contexto, eventos, novedades o sentimiento. Solo acepta `per_page` (cantidad).
 
 Vistas BigQuery disponibles:
 - `{PROJECT}.{DATASET}.latest_prices`: snapshot más reciente por moneda (coin_id, symbol, name,

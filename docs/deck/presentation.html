@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CoinGecko Pipeline · GCP · Daniel Santos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css"/>
+<style>
+/* ── OVERRIDE BASE ──────────────────────────────────────── */
+.reveal {
+  font-family: 'Google Sans', 'Segoe UI', system-ui, sans-serif;
+  font-size: 32px !important;  /* white theme fija 40px — ajustado para balance tamaño/contenido */
+}
+.reveal .slides section {
+  text-align: left;
+  box-sizing: border-box;
+}
+
+/* ── GCP COLORS ─────────────────────────────────────────── */
+:root {
+  --blue:   #1A73E8;
+  --blue2:  #E8F0FE;
+  --green:  #1E8E3E;
+  --green2: #E6F4EA;
+  --yellow: #F9AB00;
+  --yel2:   #FEF7E0;
+  --red:    #D93025;
+  --red2:   #FCE8E6;
+  --gray1:  #202124;
+  --gray2:  #5F6368;
+  --gray3:  #DADCE0;
+  --gray4:  #F8F9FA;
+}
+
+/* ── TYPOGRAPHY ─────────────────────────────────────────── */
+.reveal h1, .reveal h2, .reveal h3 {
+  font-family: 'Google Sans', 'Segoe UI', system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  color: var(--gray1);
+  text-transform: none;
+}
+.reveal h1 { font-size: 1.8em; font-weight: 700; line-height: 1.15; margin: 0 0 8px; }
+.reveal h2 { font-size: 1.15em; font-weight: 700; margin: 0 0 10px; }
+.reveal h3 { font-size: 0.75em; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.07em; margin: 0 0 10px; }
+.reveal p  { font-size: 0.78em; line-height: 1.6; color: var(--gray2); margin: 0 0 6px; }
+.reveal ul { list-style: none; padding: 0; margin: 0; }
+.reveal ul li {
+  font-size: 0.78em; line-height: 1.55; padding: 5px 0 5px 18px;
+  position: relative; color: var(--gray1);
+}
+.reveal ul li::before { content: "•"; color: var(--blue); position: absolute; left: 2px; font-weight: 700; }
+.reveal strong { color: var(--gray1); font-weight: 700; }
+.reveal code {
+  font-family: 'Google Sans Mono', 'Roboto Mono', monospace;
+  font-size: 0.8em; background: var(--gray4);
+  border: 1px solid var(--gray3); border-radius: 4px;
+  padding: 1px 6px; color: #1557B0;
+}
+
+/* ── PROGRESS / CONTROLS ────────────────────────────────── */
+.reveal .progress span { background: var(--blue); }
+.reveal .slide-number  { color: var(--gray2); background: transparent; font-family: 'Google Sans', sans-serif; }
+
+/* ══════════════════════════════════════════════════════════
+   REUSABLE COMPONENTS
+   ══════════════════════════════════════════════════════════ */
+
+/* EYEBROW CHIP */
+.chip {
+  display: inline-block; font-size: 0.52em; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.09em;
+  padding: 3px 10px; border-radius: 100px; border: 1.5px solid;
+  margin-bottom: 8px;
+}
+.chip-blue   { color: var(--blue);  background: var(--blue2);  border-color: #AECBFA; }
+.chip-green  { color: var(--green); background: var(--green2); border-color: #A8D5B5; }
+.chip-yellow { color: #7A5800;      background: var(--yel2);   border-color: #FBDC78; }
+.chip-red    { color: var(--red);   background: var(--red2);   border-color: #F5B8B3; }
+
+/* CARD */
+.card {
+  background: #fff; border: 1px solid var(--gray3);
+  border-radius: 10px; padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(60,64,67,.15), 0 2px 6px rgba(60,64,67,.1);
+}
+.card.c-blue   { border-top: 3px solid var(--blue);  background: var(--blue2); }
+.card.c-green  { border-top: 3px solid var(--green); background: var(--green2); }
+.card.c-yellow { border-top: 3px solid var(--yellow);background: var(--yel2); }
+.card.c-red    { border-top: 3px solid var(--red);   background: var(--red2); }
+.card-lbl  { font-size: 0.6em; font-weight: 700; color: var(--gray2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.card-val  { font-size: 1.3em; font-weight: 700; color: var(--gray1); line-height: 1.2; }
+.card-sub  { font-size: 0.6em; color: var(--gray2); margin-top: 2px; }
+
+/* CALLOUT */
+.callout {
+  border-left: 4px solid var(--blue); background: var(--blue2);
+  border-radius: 0 8px 8px 0; padding: 12px 16px;
+  font-size: 0.72em; color: var(--gray1); line-height: 1.55; margin-top: 12px;
+}
+.callout.green { border-color: var(--green); background: var(--green2); }
+.callout.yellow{ border-color: var(--yellow);background: var(--yel2); }
+
+/* GRID */
+.g2 { display: grid; grid-template-columns: 1fr 1fr;     gap: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+
+/* TABLE */
+.reveal table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  font-size: 0.72em; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--gray3);
+  box-shadow: 0 1px 3px rgba(60,64,67,.12);
+}
+.reveal table th {
+  background: var(--blue); color: #fff;
+  padding: 7px 12px; text-align: left;
+  font-weight: 600; font-size: 0.88em; border: none;
+}
+.reveal table td {
+  padding: 6px 12px; border-bottom: 1px solid var(--gray3);
+  color: var(--gray1); vertical-align: middle; white-space: nowrap;
+}
+.reveal table tr:last-child td { border-bottom: none; }
+.reveal table tr:nth-child(even) td { background: var(--gray4); }
+
+/* FLOW NODE */
+.fnode {
+  background: #fff; border: 1.5px solid var(--gray3);
+  border-radius: 8px; padding: 6px 10px; text-align: center;
+  box-shadow: 0 1px 3px rgba(60,64,67,.12);
+}
+.fnode.fb { border-color: var(--blue);  background: var(--blue2); }
+.fnode.fg { border-color: var(--green); background: var(--green2); }
+.fnode.fy { border-color: var(--yellow);background: var(--yel2); }
+.fnode.fp { border-color: #8430CE; background: #F3E8FD; }
+.fnode .fi { font-size: 1.05em; display: block; margin-bottom: 1px; }
+.fnode .fn { font-size: 0.58em; font-weight: 700; color: var(--gray1); }
+.fnode .fs { font-size: 0.48em; color: var(--gray2); }
+.farr { color: var(--gray2); font-size: 0.85em; padding: 0 2px; flex-shrink:0; }
+.flbl { font-size: 0.46em; color: var(--gray2); font-style: italic; white-space: nowrap; }
+
+/* RESULT ROW */
+.ritem {
+  background: #fff; border: 1px solid var(--gray3);
+  border-left: 4px solid var(--green);
+  border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 6px 0;
+  box-shadow: 0 1px 3px rgba(60,64,67,.1);
+}
+.rq { font-size: 0.68em; color: var(--gray2); font-style: italic; margin-bottom: 3px; }
+.ra { font-size: 0.72em; font-weight: 700; color: var(--green); }
+.rt { font-size: 0.58em; color: #9AA0A6; margin-top: 2px; }
+
+/* STEP ROW */
+.step-row { display: flex; align-items: flex-start; gap: 10px; margin: 8px 0; }
+.sbadge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  font-size: 0.62em; font-weight: 700; background: var(--blue); color: #fff;
+}
+.step-row span { font-size: 0.74em; color: var(--gray1); line-height: 1.5; padding-top: 3px; }
+
+/* DIVIDER */
+hr.div { border: none; border-top: 1px solid var(--gray3); margin: 16px 0; }
+
+/* METRIC */
+.metric { font-size: 2.6em; font-weight: 700; color: var(--green); line-height: 1; }
+.metric.blue { color: var(--blue); }
+.mlbl { font-size: 0.65em; color: var(--gray2); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════
+  0 · PERSONAL
+══════════════════════════════════════ -->
+<section data-background-color="#1A73E8" style="padding:28px 44px;">
+  <div style="display:grid;grid-template-columns:1fr 200px;gap:28px;align-items:start;">
+
+    <!-- COLUMNA IZQUIERDA -->
+    <div>
+      <div class="chip" style="color:#fff;background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);margin-bottom:10px;">Sobre mí</div>
+      <h1 style="color:#fff;font-size:1.9em;margin:0 0 4px;">Daniel Santos</h1>
+      <p style="color:rgba(255,255,255,.85);font-size:0.8em;margin:0 0 12px;font-weight:500;">
+        Data &amp; AI Engineer &nbsp;·&nbsp; Multicloud &nbsp;·&nbsp; GCP · Azure · AWS · Databricks
+      </p>
+
+      <p style="color:rgba(255,255,255,.9);font-size:0.7em;line-height:1.6;margin:0 0 14px;border-left:3px solid rgba(255,255,255,.4);padding-left:10px;">
+        5 años construyendo pipelines de datos e IA en entornos multicloud. Especializado en arquitecturas de datos modernas con GCP, Azure, AWS y Databricks. Fundador de <strong style="color:#fff;">Datahackers</strong> — comunidad de Data &amp; AI en español.
+      </p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:0.48em;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.6);margin-bottom:3px;">Experiencia</div>
+          <div style="font-size:0.78em;font-weight:700;color:#fff;">5 años</div>
+          <div style="font-size:0.52em;color:rgba(255,255,255,.6);">Data & AI Engineering</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:0.48em;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.6);margin-bottom:3px;">Cloud</div>
+          <div style="font-size:0.78em;font-weight:700;color:#fff;">Multicloud</div>
+          <div style="font-size:0.52em;color:rgba(255,255,255,.6);">GCP · Azure · AWS</div>
+        </div>
+        <div style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:0.48em;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.6);margin-bottom:3px;">Stack</div>
+          <div style="font-size:0.78em;font-weight:700;color:#fff;">Databricks</div>
+          <div style="font-size:0.52em;color:rgba(255,255,255,.6);">BigQuery · Spark · dbt</div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">Python</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">Google Cloud</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">Azure</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">AWS</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">Databricks</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">BigQuery</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">AI · Gemini</span>
+        <span style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:100px;padding:3px 10px;font-size:0.58em;color:#fff;">Spark / dbt</span>
+      </div>
+
+      <div style="font-size:0.48em;color:rgba(255,255,255,.4);margin-top:10px;">
+        daniel.santos.emprende@gmail.com
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: foto + QR apilados -->
+    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+
+      <div style="text-align:center;">
+        <img src="daniel%20santos.jpeg" alt="Daniel Santos"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
+             style="width:115px;height:115px;border-radius:50%;border:3px solid rgba(255,255,255,.5);object-fit:cover;display:block;margin:0 auto;"/>
+        <div style="display:none;width:115px;height:115px;border-radius:50%;border:3px dashed rgba(255,255,255,.4);background:rgba(255,255,255,.1);align-items:center;justify-content:center;margin:0 auto;">
+          <span style="font-size:2em;">👤</span>
+        </div>
+        <div style="font-size:0.55em;color:rgba(255,255,255,.8);font-weight:600;margin-top:6px;">Daniel Santos</div>
+      </div>
+
+      <div style="text-align:center;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https%3A%2F%2Fchat.whatsapp.com%2FIY1Z2dNZz6oJefX8Kozg0T&color=ffffff&bgcolor=1A73E8&qzone=1"
+             alt="QR Datahackers"
+             style="width:105px;height:105px;border-radius:8px;border:2px solid rgba(255,255,255,.35);display:block;margin:0 auto;"/>
+        <div style="font-size:0.58em;color:#fff;font-weight:700;margin-top:5px;">Datahackers</div>
+        <div style="font-size:0.46em;color:rgba(255,255,255,.65);">Comunidad Data &amp; AI</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  1 · PORTADA
+══════════════════════════════════════ -->
+<section style="padding:36px 50px;">
+  <div style="font-size:0.62em;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.1em;margin-bottom:18px;display:flex;align-items:center;gap:8px;">
+    <span style="display:block;width:20px;height:2px;background:var(--blue);"></span>
+    Google Cloud Platform · Data Pipeline
+  </div>
+  <h1 style="font-size:2.4em;line-height:1.1;margin-bottom:10px;">
+    CoinGecko → BigQuery<br/>
+    <span style="color:var(--blue);">→ Agente Q&amp;A</span>
+  </h1>
+  <p style="font-size:0.85em;color:var(--gray2);margin-bottom:32px;">
+    Pipeline de datos cripto end-to-end con dos agentes Gemini nativos en GCP
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <span class="chip chip-blue">Serverless</span>
+    <span class="chip chip-green">Gemini Nativo</span>
+    <span class="chip chip-yellow">Lenguaje Natural</span>
+    <span class="chip" style="color:#8430CE;background:#F3E8FD;border-color:#D4A5FA;">ADK v1 · Agent Engine</span>
+  </div>
+  <hr class="div" style="margin-top:32px;"/>
+  <p style="font-size:0.62em;color:#9AA0A6;">
+    airflow-pipeline-project &nbsp;·&nbsp; us-central1 &nbsp;·&nbsp; Terraform 1.15 &nbsp;·&nbsp; 2026
+  </p>
+</section>
+
+<!-- ══════════════════════════════════
+  2 · EL PROBLEMA
+══════════════════════════════════════ -->
+<section style="padding:32px 50px;">
+  <div class="chip chip-red">Contexto</div>
+  <h2>¿Por qué un pipeline de datos cripto?</h2>
+  <div class="g2">
+    <div class="card c-red">
+      <div class="card-lbl">❌ Sin pipeline</div>
+      <ul style="margin-top:10px;">
+        <li>Datos de precios dispersos y volátiles</li>
+        <li>Sin historial: cada consulta re-llama la API</li>
+        <li>Rate limit frágil — solo 10 000 req/mes gratis</li>
+        <li>Analizar datos = escribir código manualmente</li>
+      </ul>
+    </div>
+    <div class="card c-green">
+      <div class="card-lbl">✅ Con este pipeline</div>
+      <ul style="margin-top:10px;">
+        <li>Ingesta batch automática cada hora y diario</li>
+        <li>Historial acumulado en BigQuery estructurado</li>
+        <li>Landing replayable — datos nunca se pierden</li>
+        <li>Preguntas en <strong>lenguaje natural</strong>, sin SQL</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:16px;">
+    <strong>Objetivo:</strong> CoinGecko → BigQuery → agente Q&amp;A, todo serverless en GCP, coste ~$0 al día.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  3 · ARQUITECTURA
+══════════════════════════════════════ -->
+<section style="padding:24px 44px;">
+  <div class="chip chip-blue">Arquitectura</div>
+  <h2 style="margin-bottom:14px;">Pipeline end-to-end — 5 capas</h2>
+
+  <!-- HORIZONTAL FLOW: 5 layers + 4 arrows -->
+  <div style="display:flex;align-items:stretch;gap:0;">
+
+    <!-- ① SOURCE -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:0.44em;font-weight:700;color:#7A5800;text-transform:uppercase;letter-spacing:.07em;background:var(--yel2);border:1px solid #FBDC78;border-radius:100px;padding:2px 8px;white-space:nowrap;">① Source</div>
+      <div class="fnode fy" style="width:100%;box-sizing:border-box;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;">
+        <span style="font-size:1.5em;display:block;margin-bottom:4px;">🌐</span>
+        <span class="fn">CoinGecko API</span>
+        <span class="fs">Demo · gratis</span>
+        <span class="fs">top 250 coins</span>
+      </div>
+    </div>
+
+    <!-- Arrow → -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;min-width:44px;padding-top:26px;">
+      <span style="font-size:0.8em;color:var(--blue);font-weight:700;">→</span>
+      <span style="font-size:0.4em;color:var(--gray2);font-style:italic;text-align:center;line-height:1.3;">batch<br/>HTTP</span>
+    </div>
+
+    <!-- ② COMPUTE -->
+    <div style="flex:1.35;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:0.44em;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;background:var(--blue2);border:1px solid #AECBFA;border-radius:100px;padding:2px 8px;white-space:nowrap;">② Compute</div>
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;gap:5px;">
+        <div class="fnode fb" style="padding:8px 8px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <span style="font-size:1.5em;display:block;margin-bottom:3px;">🚀</span>
+          <span class="fn">Cloud Run Job</span>
+          <span class="fs">Python · escala a cero</span>
+        </div>
+        <div style="display:flex;gap:4px;">
+          <div class="fnode fb" style="flex:1;padding:5px 4px;text-align:center;">
+            <span style="font-size:0.85em;display:block;">⏰</span>
+            <span class="fs">Scheduler</span>
+            <span style="font-size:0.44em;color:#9AA0A6;display:block;">Hourly+Daily</span>
+          </div>
+          <div class="fnode fb" style="flex:1;padding:5px 4px;text-align:center;">
+            <span style="font-size:0.85em;display:block;">🔐</span>
+            <span class="fs">Secrets</span>
+            <span style="font-size:0.44em;color:#9AA0A6;display:block;">API key</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrow → -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;min-width:44px;padding-top:26px;">
+      <span style="font-size:0.8em;color:var(--blue);font-weight:700;">→</span>
+      <span style="font-size:0.4em;color:var(--gray2);font-style:italic;text-align:center;line-height:1.3;">NDJSON<br/>crudo</span>
+    </div>
+
+    <!-- ③ LANDING -->
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:0.44em;font-weight:700;color:#7A5800;text-transform:uppercase;letter-spacing:.07em;background:var(--yel2);border:1px solid #FBDC78;border-radius:100px;padding:2px 8px;white-space:nowrap;">③ Landing</div>
+      <div class="fnode fy" style="width:100%;box-sizing:border-box;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;">
+        <span style="font-size:1.5em;display:block;margin-bottom:4px;">🪣</span>
+        <span class="fn">Cloud Storage</span>
+        <span class="fs">Bronze layer</span>
+        <span class="fs" style="color:var(--green);font-weight:600;">replayable</span>
+      </div>
+    </div>
+
+    <!-- Arrow → -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;min-width:44px;padding-top:26px;">
+      <span style="font-size:0.8em;color:var(--blue);font-weight:700;">→</span>
+      <span style="font-size:0.4em;color:var(--gray2);font-style:italic;text-align:center;line-height:1.3;">bq<br/>load</span>
+    </div>
+
+    <!-- ④ WAREHOUSE -->
+    <div style="flex:1.2;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:0.44em;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;background:var(--blue2);border:1px solid #AECBFA;border-radius:100px;padding:2px 8px;white-space:nowrap;">④ Warehouse</div>
+      <div class="fnode fb" style="width:100%;box-sizing:border-box;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 8px;">
+        <span style="font-size:1.5em;display:block;margin-bottom:4px;">📊</span>
+        <span class="fn">BigQuery</span>
+        <span class="fs">5 tablas raw</span>
+        <span class="fs">4 vistas curated</span>
+      </div>
+    </div>
+
+    <!-- Arrow → -->
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5px;min-width:44px;padding-top:26px;">
+      <span style="font-size:0.8em;color:var(--green);font-weight:700;">→</span>
+      <span style="font-size:0.4em;color:var(--gray2);font-style:italic;text-align:center;line-height:1.3;">lenguaje<br/>natural</span>
+    </div>
+
+    <!-- ⑤ AI LAYER -->
+    <div style="flex:1.3;display:flex;flex-direction:column;align-items:center;gap:6px;">
+      <div style="font-size:0.44em;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;background:var(--green2);border:1px solid #A8D5B5;border-radius:100px;padding:2px 8px;white-space:nowrap;">⑤ AI Layer</div>
+      <div style="width:100%;flex:1;display:flex;flex-direction:column;gap:5px;">
+        <div class="fnode fg" style="padding:8px 8px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <span style="font-size:1.3em;display:block;margin-bottom:3px;">🤖</span>
+          <span class="fn">CA API Agent</span>
+          <span class="fs">NL→SQL · managed</span>
+        </div>
+        <div class="fnode fp" style="padding:8px 8px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <span style="font-size:1.3em;display:block;margin-bottom:3px;">🧠</span>
+          <span class="fn">ADK Engine</span>
+          <span class="fs">3 tools · extensible</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- KEY FACTS ROW -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;">
+    <div style="background:var(--yel2);border:1px solid #FBDC78;border-radius:8px;padding:6px 10px;text-align:center;">
+      <div style="font-size:0.52em;font-weight:700;color:#7A5800;">10k req/mes</div>
+      <div style="font-size:0.42em;color:var(--gray2);">CoinGecko Demo gratis</div>
+    </div>
+    <div style="background:var(--blue2);border:1px solid #AECBFA;border-radius:8px;padding:6px 10px;text-align:center;">
+      <div style="font-size:0.52em;font-weight:700;color:var(--blue);">Serverless</div>
+      <div style="font-size:0.42em;color:var(--gray2);">Cloud Run escala a cero</div>
+    </div>
+    <div style="background:var(--blue2);border:1px solid #AECBFA;border-radius:8px;padding:6px 10px;text-align:center;">
+      <div style="font-size:0.52em;font-weight:700;color:var(--blue);">Replay</div>
+      <div style="font-size:0.42em;color:var(--gray2);">GCS → BQ sin re-ingestar</div>
+    </div>
+    <div style="background:var(--green2);border:1px solid #A8D5B5;border-radius:8px;padding:6px 10px;text-align:center;">
+      <div style="font-size:0.52em;font-weight:700;color:var(--green);">~$0 / día</div>
+      <div style="font-size:0.42em;color:var(--gray2);">Free tier GCP completo</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  4 · FASES DEL PROYECTO
+══════════════════════════════════════ -->
+<section style="padding:26px 50px;">
+  <div class="chip chip-blue">Proceso de construcción</div>
+  <h2>Cómo se armó — 5 fases paso a paso</h2>
+
+  <div style="position:relative;margin-top:14px;">
+    <!-- Connector line -->
+    <div style="position:absolute;top:18px;left:calc(10% + 18px);right:calc(10% + 18px);height:3px;background:linear-gradient(90deg,#1A73E8 0%,#F9AB00 40%,#1E8E3E 65%,#8430CE 100%);border-radius:2px;z-index:0;"></div>
+
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;position:relative;z-index:1;">
+
+      <!-- FASE 1 -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1A73E8;color:#fff;font-size:0.7em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(26,115,232,.4);margin-bottom:10px;">1</div>
+        <div style="background:#E8F0FE;border:1.5px solid #AECBFA;border-radius:10px;padding:12px 10px;width:100%;box-sizing:border-box;">
+          <div style="font-size:1.35em;text-align:center;margin-bottom:5px;">🔧</div>
+          <div style="font-size:0.6em;font-weight:700;color:#202124;text-align:center;margin-bottom:3px;">IaC / Fundaciones</div>
+          <div style="font-size:0.48em;color:#1A73E8;font-weight:600;text-align:center;margin-bottom:7px;">Terraform + gcloud</div>
+          <div style="font-size:0.48em;color:#5F6368;line-height:1.75;">
+            ✓ GCP APIs<br/>✓ IAM + SAs<br/>✓ BQ datasets<br/>✓ Secret Manager<br/>✓ Artifact Registry
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 2 -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#F9AB00;color:#fff;font-size:0.7em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(249,171,0,.4);margin-bottom:10px;">2</div>
+        <div style="background:#FEF7E0;border:1.5px solid #FBDC78;border-radius:10px;padding:12px 10px;width:100%;box-sizing:border-box;">
+          <div style="font-size:1.35em;text-align:center;margin-bottom:5px;">🐍</div>
+          <div style="font-size:0.6em;font-weight:700;color:#202124;text-align:center;margin-bottom:3px;">Ingesta TDD</div>
+          <div style="font-size:0.48em;color:#7A5800;font-weight:600;text-align:center;margin-bottom:7px;">Cloud Run Job · Python</div>
+          <div style="font-size:0.48em;color:#5F6368;line-height:1.75;">
+            ✓ 15 tests unitarios<br/>✓ Cloud Scheduler<br/>✓ Hourly + Daily<br/>✓ Cloud Build<br/>✓ Docker imagen
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 3 -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1E8E3E;color:#fff;font-size:0.7em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(30,142,62,.4);margin-bottom:10px;">3</div>
+        <div style="background:#E6F4EA;border:1.5px solid #A8D5B5;border-radius:10px;padding:12px 10px;width:100%;box-sizing:border-box;">
+          <div style="font-size:1.35em;text-align:center;margin-bottom:5px;">🪣📊</div>
+          <div style="font-size:0.6em;font-weight:700;color:#202124;text-align:center;margin-bottom:3px;">Capa de datos</div>
+          <div style="font-size:0.48em;color:#1E8E3E;font-weight:600;text-align:center;margin-bottom:7px;">GCS + BigQuery</div>
+          <div style="font-size:0.48em;color:#5F6368;line-height:1.75;">
+            ✓ NDJSON landing<br/>✓ 5 tablas raw<br/>✓ bq load<br/>✓ 4 vistas curated<br/>✓ Replay desde GCS
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 4 -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1A73E8;color:#fff;font-size:0.7em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(26,115,232,.4);margin-bottom:10px;">4</div>
+        <div style="background:#E8F0FE;border:1.5px solid #AECBFA;border-radius:10px;padding:12px 10px;width:100%;box-sizing:border-box;">
+          <div style="font-size:1.35em;text-align:center;margin-bottom:5px;">🤖</div>
+          <div style="font-size:0.6em;font-weight:700;color:#202124;text-align:center;margin-bottom:3px;">Agente 1</div>
+          <div style="font-size:0.48em;color:#1A73E8;font-weight:600;text-align:center;margin-bottom:7px;">CA API Data Agent</div>
+          <div style="font-size:0.48em;color:#5F6368;line-height:1.75;">
+            ✓ NL → SQL auto<br/>✓ 100% managed<br/>✓ coingecko-analyst<br/>✓ 0 infra propia<br/>✓ Gemini nativo
+          </div>
+        </div>
+      </div>
+
+      <!-- FASE 5 -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#8430CE;color:#fff;font-size:0.7em;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(132,48,206,.4);margin-bottom:10px;">5</div>
+        <div style="background:#F3E8FD;border:1.5px solid #D4A5FA;border-radius:10px;padding:12px 10px;width:100%;box-sizing:border-box;">
+          <div style="font-size:1.35em;text-align:center;margin-bottom:5px;">🧠</div>
+          <div style="font-size:0.6em;font-weight:700;color:#202124;text-align:center;margin-bottom:3px;">Agente 2</div>
+          <div style="font-size:0.48em;color:#8430CE;font-weight:600;text-align:center;margin-bottom:7px;">ADK + Agent Engine</div>
+          <div style="font-size:0.48em;color:#5F6368;line-height:1.75;">
+            ✓ 3 tools Python<br/>✓ Precio live<br/>✓ Noticias cripto<br/>✓ Vertex AI<br/>✓ Extensible
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:14px;font-size:0.66em;">
+    Workflow TDD: cada fase se verificó con datos reales en GCP antes de avanzar. Total: ~6 semanas.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  5 · CAPA DE DATOS
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-yellow">Datos</div>
+  <h2>Arquitectura de datos: Bronze → Silver</h2>
+  <div class="g2" style="gap:20px;">
+    <div>
+      <h3 style="font-size:0.65em;">5 TABLAS RAW — coingecko_raw</h3>
+      <ul>
+        <li><code>coin_markets</code> — top 250, precio, market cap, %24h &nbsp;<em>hourly</em></li>
+        <li><code>market_global</code> — dominancia BTC/ETH, activos &nbsp;<em>hourly</em></li>
+        <li><code>trending</code> — monedas más buscadas 24h &nbsp;<em>hourly</em></li>
+        <li><code>coin_ohlc</code> — velas O/H/L/C top 50, 7d &nbsp;<em>daily</em></li>
+        <li><code>coin_metadata</code> — categorías, supply, descripción &nbsp;<em>daily</em></li>
+      </ul>
+      <div class="callout yellow" style="margin-top:12px;font-size:0.68em;">
+        <strong>Replay:</strong> si se pierde una tabla BQ, se recarga desde GCS sin volver a llamar CoinGecko.
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:0.65em;">4 VISTAS CURATED — coingecko_curated</h3>
+      <div class="card" style="padding:14px 16px;">
+        <div style="font-size:0.7em;margin:4px 0;"><code>latest_prices</code> <span style="color:var(--gray2);">— snapshot más reciente por moneda</span></div>
+        <div style="font-size:0.7em;margin:4px 0;"><code>dim_coin</code> <span style="color:var(--gray2);">— id, symbol, name, categories[]</span></div>
+        <div style="font-size:0.7em;margin:4px 0;"><code>ohlc_timeseries</code> <span style="color:var(--gray2);">— velas diarias limpias</span></div>
+        <div style="font-size:0.7em;margin:4px 0;"><code>market_global_daily</code> <span style="color:var(--gray2);">— totales macro por día</span></div>
+      </div>
+      <div class="callout green" style="margin-top:12px;font-size:0.65em;">
+        Dedup: <code>ROW_NUMBER() OVER (PARTITION BY id ORDER BY ingestion_time DESC) = 1</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  6 · DOS AGENTES
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-green">Agentes</div>
+  <h2>Dos agentes · Un solo pipeline de datos</h2>
+  <div class="g2" style="gap:18px;margin-top:4px;">
+
+    <div class="card c-green" style="padding:18px 20px;">
+      <div class="chip chip-green" style="margin-bottom:8px;">Agente 1</div>
+      <div style="font-size:0.85em;font-weight:700;color:var(--gray1);margin-bottom:4px;">🤖 CA API Data Agent</div>
+      <div style="font-size:0.62em;color:var(--gray2);margin-bottom:12px;"><code>coingecko-analyst</code></div>
+      <ul>
+        <li>Runtime <strong>100% managed</strong> por Google</li>
+        <li>NL → BigQuery SQL automático</li>
+        <li>Sin servidor ni infra propia</li>
+        <li>Ideal: analytics puro sobre datos históricos</li>
+      </ul>
+    </div>
+
+    <div class="card c-blue" style="padding:18px 20px;">
+      <div class="chip chip-blue" style="margin-bottom:8px;">Agente 2</div>
+      <div style="font-size:0.85em;font-weight:700;color:var(--gray1);margin-bottom:4px;">🧠 ADK Agent Engine (ADK v1)</div>
+      <div style="font-size:0.62em;color:var(--gray2);margin-bottom:12px;"><code>coingecko-adk</code></div>
+      <ul>
+        <li><strong>3 tools</strong>: BigQuery + Live Price + Noticias</li>
+        <li>Ve datos en <strong>tiempo real</strong></li>
+        <li>Python extensible — añade tools propias</li>
+        <li>Demo: <code>http://127.0.0.1:8000</code></li>
+      </ul>
+    </div>
+
+  </div>
+  <div class="callout" style="margin-top:14px;font-size:0.7em;text-align:center;">
+    Mismas 4 vistas curated &nbsp;·&nbsp; Dos experiencias distintas &nbsp;·&nbsp; ~$0.0002 / query (Gemini 2.5 Flash)
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  7 · AGENTE 2 — 3 TOOLS
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-blue">Agente 2 · Detalle</div>
+  <h2>ADK Agent Engine — 3 herramientas</h2>
+  <div class="g3" style="margin-top:8px;">
+
+    <div class="card" style="border-top:3px solid var(--blue);">
+      <div style="font-size:0.6em;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">🔵 Tool 1</div>
+      <div style="font-size:0.82em;font-weight:700;color:var(--gray1);margin-bottom:8px;">BigQueryToolset</div>
+      <p>Historial completo en <code>coingecko_curated</code>. Solo lectura (<code>WriteMode.BLOCKED</code>). Rankings, OHLC, dominancia.</p>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--yellow);">
+      <div style="font-size:0.6em;font-weight:700;color:#7A5800;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">🟡 Tool 2</div>
+      <div style="font-size:0.82em;font-weight:700;color:var(--gray1);margin-bottom:8px;">get_live_price()</div>
+      <p>Precio en <strong>tiempo real</strong> desde CoinGecko. Sin esperar el job hourly. Precio, market cap, %24h.</p>
+    </div>
+
+    <div class="card" style="border-top:3px solid var(--green);">
+      <div style="font-size:0.6em;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;">🟢 Tool 3</div>
+      <div style="font-size:0.82em;font-weight:700;color:var(--gray1);margin-bottom:8px;">get_crypto_news()</div>
+      <p>Noticias recientes del mercado. CoinGecko <code>/news</code>. Título, fuente, descripción y fecha.</p>
+    </div>
+
+  </div>
+  <div class="callout" style="margin-top:16px;">
+    El agente <strong>elige autónomamente qué tool usar</strong> según la pregunta — puede combinar las tres en una sola respuesta.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  8 · DEMO RESULTADOS
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-green">Demo en vivo</div>
+  <h2>Resultados reales del agente</h2>
+
+  <div class="ritem">
+    <div class="rq">💬 "¿Cuáles son las top 5 monedas por market cap?"</div>
+    <div class="ra">✅ BTC $1.19T · ETH $189B · USDT $186B · BNB $75B · USDC $73B</div>
+    <div class="rt">Tool: BigQuery → <code>latest_prices ORDER BY market_cap_rank LIMIT 5</code></div>
+  </div>
+
+  <div class="ritem">
+    <div class="rq">💬 "¿Cuál es el precio actual de Bitcoin?"</div>
+    <div class="ra">✅ Precio live desde CoinGecko, sin esperar el job hourly</div>
+    <div class="rt">Tool: <code>get_live_price("bitcoin")</code> → respuesta inmediata</div>
+  </div>
+
+  <div class="ritem">
+    <div class="rq">💬 "¿Qué noticias hay del mercado cripto?"</div>
+    <div class="ra">✅ Últimas noticias con título, fuente y descripción</div>
+    <div class="rt">Tool: <code>get_crypto_news(per_page=5)</code> → CoinGecko /news</div>
+  </div>
+
+  <div class="ritem">
+    <div class="rq">💬 "¿OHLC de Ethereum la última semana?"</div>
+    <div class="ra">✅ Velas O/H/L/C diarias desde ohlc_timeseries</div>
+    <div class="rt">Tool: BigQuery → <code>ohlc_timeseries WHERE coin_id = 'ethereum'</code></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  9 · RESULTADOS Y COSTOS
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-green">Resultados</div>
+  <h2>Lo que se construyó</h2>
+  <div class="g2" style="gap:20px;">
+    <div>
+      <ul>
+        <li><strong>Pipeline automático</strong> — hourly + daily, sin intervención manual</li>
+        <li><strong>15 tests unitarios</strong> verde desde el primer día (TDD)</li>
+        <li><strong>Dos agentes Gemini</strong> en producción respondiendo en español</li>
+        <li><strong>Datos frescos</strong> en BigQuery actualizados cada hora</li>
+        <li><strong>Terraform modular</strong> — un destroy limpia todo el proyecto</li>
+        <li><strong>Replay desde GCS</strong> si hay pérdida de tablas en BQ</li>
+      </ul>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card c-green" style="text-align:center;">
+        <div class="metric">~$0</div>
+        <div class="mlbl">Costo operación diaria<br/><span style="font-size:0.85em;color:#9AA0A6;">Free tier GCP + CoinGecko Demo</span></div>
+      </div>
+      <div class="card c-blue" style="text-align:center;">
+        <div class="metric blue" style="font-size:2em;">$0.0002</div>
+        <div class="mlbl">Coste por query al agente<br/><span style="font-size:0.85em;color:#9AA0A6;">Gemini 2.5 Flash tokens</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  10 · PRÓXIMOS PASOS
+══════════════════════════════════════ -->
+<section style="padding:30px 50px;">
+  <div class="chip chip-yellow">Roadmap</div>
+  <h2>Próximos pasos</h2>
+  <div class="g2" style="gap:20px;margin-top:4px;">
+    <div>
+      <h3 style="font-size:0.7em;">CORTO PLAZO</h3>
+      <ul>
+        <li>Materializar vistas curated → tablas si crece el volumen</li>
+        <li>Dashboard en <strong>Looker Studio</strong> sobre las 4 vistas</li>
+        <li>Alertas de precio como tool adicional en ADK</li>
+        <li>Migrar Terraform state a GCS para CI/CD</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="font-size:0.7em;">LARGO PLAZO</h3>
+      <ul>
+        <li>Nuevas fuentes: DEX, NFT, datos on-chain</li>
+        <li>Reusar patrón landing → raw → curated para cualquier API</li>
+        <li>Comparaciones históricas avanzadas en ADK</li>
+        <li>Streaming real con Pub/Sub + Dataflow</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:18px;text-align:center;font-size:0.74em;">
+    El patrón es <strong>100% replicable</strong> para cualquier API de datos financieros —
+    solo cambiar el cliente Python y los schemas de BigQuery.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+  11 · CIERRE
+══════════════════════════════════════ -->
+<section data-background-color="#F8F9FA" style="padding:52px 60px;text-align:center;">
+  <div style="font-size:2.6em;margin-bottom:14px;">🚀</div>
+  <h1 style="font-size:1.7em;margin-bottom:3px;">CoinGecko → BigQuery → Agente Q&amp;A</h1>
+  <p style="font-size:0.78em;color:var(--gray2);margin-bottom:28px;">
+    Pipeline serverless · Gemini nativo · Lenguaje natural · Google Cloud
+  </p>
+
+  <div class="g4" style="gap:12px;max-width:700px;margin:0 auto 28px;">
+    <div class="card" style="text-align:center;padding:14px 10px;">
+      <div style="font-size:1.4em;">☁️</div>
+      <div style="font-size:0.68em;font-weight:700;margin-top:4px;">Serverless</div>
+      <div style="font-size:0.55em;color:var(--gray2);">Escala a cero</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px 10px;">
+      <div style="font-size:1.4em;">🔄</div>
+      <div style="font-size:0.68em;font-weight:700;margin-top:4px;">Automático</div>
+      <div style="font-size:0.55em;color:var(--gray2);">Hourly + Daily</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px 10px;">
+      <div style="font-size:1.4em;">💬</div>
+      <div style="font-size:0.68em;font-weight:700;margin-top:4px;">NL → SQL</div>
+      <div style="font-size:0.55em;color:var(--gray2);">Gemini nativo</div>
+    </div>
+    <div class="card" style="text-align:center;padding:14px 10px;">
+      <div style="font-size:1.4em;">💰</div>
+      <div style="font-size:0.68em;font-weight:700;margin-top:4px;">~$0 / día</div>
+      <div style="font-size:0.55em;color:var(--gray2);">Free tier GCP</div>
+    </div>
+  </div>
+
+  <hr class="div" style="max-width:500px;margin:0 auto 16px;"/>
+  <p style="font-size:0.6em;color:#9AA0A6;">
+    <code>airflow-pipeline-project</code> &nbsp;·&nbsp; us-central1 &nbsp;·&nbsp;
+    Daniel Santos &nbsp;·&nbsp; daniel.santos.emprende@gmail.com
+  </p>
+
+  <!-- QR Datahackers -->
+  <div style="margin-top:20px;display:inline-flex;flex-direction:column;align-items:center;gap:6px;">
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=https%3A%2F%2Fchat.whatsapp.com%2FIY1Z2dNZz6oJefX8Kozg0T&color=1A73E8&bgcolor=ffffff&qzone=1"
+         alt="QR Datahackers WhatsApp"
+         style="width:120px;height:120px;border-radius:10px;border:2px solid var(--gray3);box-shadow:0 2px 8px rgba(60,64,67,.15);"/>
+    <div style="font-size:0.65em;color:var(--gray1);font-weight:700;margin-top:2px;">Datahackers</div>
+    <div style="font-size:0.55em;color:var(--gray2);">Comunidad de datos · WhatsApp</div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: 'c/t',
+  transition: 'slide',
+  transitionSpeed: 'default',
+  controls: true,
+  progress: true,
+  center: false,
+  width: 1100,
+  height: 680,
+  margin: 0.05,
+  minScale: 0.3,
+  maxScale: 2.0,
+});
+</script>
+</body>
+</html>
